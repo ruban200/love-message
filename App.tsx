@@ -21,6 +21,8 @@ const App: React.FC = () => {
   });
   const [noButtonStyle, setNoButtonStyle] = useState<React.CSSProperties>({});
 
+  const isApology = data.vibe === 'Sincere Apology';
+
   const handleStart = () => setStep('customize');
 
   const handleGenerate = async () => {
@@ -31,23 +33,24 @@ const App: React.FC = () => {
       setStep('proposal');
     } catch (error) {
       console.error(error);
-      alert("Failed to generate your love story. Please try again.");
+      alert("Failed to generate your message. Please try again.");
       setStep('customize');
     }
   };
 
   const handleImageGen = async () => {
-    // Proactive check to ensure user knows they need a paid key for Pro models
     // @ts-ignore
     const hasKey = await window.aistudio?.hasSelectedApiKey();
     if (!hasKey) {
       // @ts-ignore
       await window.aistudio?.openSelectKey();
-      // We assume they selected a key and continue, as per race condition rules
     }
 
     setIsGeneratingImage(true);
-    const prompt = `A sweet romantic scene with two teddy bears, ${data.specialMemory || 'holding hands under a starry sky'}`;
+    const prompt = isApology 
+      ? `A sweet scene with two teddy bears making up, ${data.specialMemory || 'one holding a sorry sign'}`
+      : `A sweet romantic scene with two teddy bears, ${data.specialMemory || 'holding hands under a starry sky'}`;
+      
     const url = await generateRomanticImage(prompt, imageConfig.ratio, imageConfig.size);
     if (url && content) {
       setContent({ ...content, imageUrl: url });
@@ -77,8 +80,8 @@ const App: React.FC = () => {
         {step === 'welcome' && (
           <div className="text-center animate-fadeIn">
             <TeddyBear mood="happy" className="mb-6" />
-            <h1 className="text-5xl font-cursive text-[#ff4d6d] mb-4">Teddy Proposal Pro</h1>
-            <p className="text-gray-600 mb-8 text-lg">Create a magical, AI-powered proposal that will melt their heart.</p>
+            <h1 className="text-5xl font-cursive text-[#ff4d6d] mb-4">Teddy Love Messages</h1>
+            <p className="text-gray-600 mb-8 text-lg">Send a proposal or a sincere apology with the help of AI magic.</p>
             <button 
               onClick={handleStart}
               className="bg-[#ff4d6d] hover:bg-[#ff758f] text-white px-8 py-3 rounded-full font-bold text-xl shadow-lg transition-all transform hover:scale-105"
@@ -90,7 +93,7 @@ const App: React.FC = () => {
 
         {step === 'customize' && (
           <div className="space-y-6 animate-fadeIn">
-            <h2 className="text-3xl font-cursive text-[#ff4d6d] text-center">Tell us about your love</h2>
+            <h2 className="text-3xl font-cursive text-[#ff4d6d] text-center">Tell us more</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col">
                 <label className="text-sm font-bold text-gray-500 mb-1">Your Name</label>
@@ -114,16 +117,16 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-bold text-gray-500 mb-1">A Special Memory or Theme</label>
+              <label className="text-sm font-bold text-gray-500 mb-1">{isApology ? 'What happened? (Optional)' : 'A Special Memory or Theme'}</label>
               <textarea 
                 value={data.specialMemory}
                 onChange={e => setData({...data, specialMemory: e.target.value})}
-                placeholder="e.g. Our first date at the beach, or 'Starry Night'"
+                placeholder={isApology ? "e.g. I forgot our anniversary, I was grumpy..." : "e.g. Our first date at the beach, or 'Starry Night'"}
                 className="p-3 rounded-xl border-2 border-pink-100 focus:border-[#ff4d6d] outline-none h-24 resize-none"
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-bold text-gray-500 mb-1">Proposal Vibe</label>
+              <label className="text-sm font-bold text-gray-500 mb-1">Message Type / Vibe</label>
               <select 
                 value={data.vibe}
                 onChange={e => setData({...data, vibe: e.target.value})}
@@ -133,6 +136,7 @@ const App: React.FC = () => {
                 <option>Cute & Playful</option>
                 <option>Poetic</option>
                 <option>Deeply Emotional</option>
+                <option>Sincere Apology</option>
               </select>
             </div>
             <button 
@@ -140,7 +144,7 @@ const App: React.FC = () => {
               disabled={!data.senderName || !data.receiverName}
               className="w-full bg-[#ff4d6d] disabled:bg-gray-300 text-white py-4 rounded-xl font-bold text-xl shadow-lg transition-all"
             >
-              Prepare Magic ✨
+              {isApology ? 'Prepare Apology 🙏' : 'Prepare Magic ✨'}
             </button>
           </div>
         )}
@@ -155,7 +159,7 @@ const App: React.FC = () => {
         {step === 'proposal' && content && (
           <div className="animate-fadeIn">
             <div className="text-center mb-6">
-              <TeddyBear mood="shy" className="h-24 mx-auto" />
+              <TeddyBear mood={isApology ? "shy" : "happy"} className="h-24 mx-auto" />
               <h2 className="text-4xl font-cursive text-[#ff4d6d] mt-2">For {data.receiverName}...</h2>
             </div>
             
@@ -170,7 +174,7 @@ const App: React.FC = () => {
 
             <div className="mb-6 border-t pt-6">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-bold text-gray-600">Generate a Romantic Poster?</h3>
+                <h3 className="text-lg font-bold text-gray-600">Generate a {isApology ? 'Sweet' : 'Romantic'} Poster?</h3>
                 <span className="text-[10px] bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full font-bold uppercase">Pro Feature</span>
               </div>
               <p className="text-xs text-gray-400 mb-4 italic">Note: Requires selecting a paid API key.</p>
@@ -205,13 +209,15 @@ const App: React.FC = () => {
               </button>
               {content.imageUrl && (
                 <div className="mt-4 flex justify-center">
-                  <img src={content.imageUrl} alt="Romantic" className="max-h-64 rounded-xl shadow-md border-4 border-white" />
+                  <img src={content.imageUrl} alt="Message Graphic" className="max-h-64 rounded-xl shadow-md border-4 border-white" />
                 </div>
               )}
             </div>
 
             <div className="flex flex-col items-center gap-4 border-t pt-6">
-              <h3 className="text-2xl font-cursive text-gray-800">Will you married me?</h3>
+              <h3 className="text-2xl font-cursive text-gray-800">
+                {isApology ? 'Will you forgive me?' : 'Will you married me?'}
+              </h3>
               <div className="flex gap-8 relative w-full justify-center">
                 <button 
                   onClick={handleYes}
@@ -235,8 +241,12 @@ const App: React.FC = () => {
         {step === 'success' && (
           <div className="text-center py-8 animate-bounceIn">
             <TeddyBear mood="love" className="mb-6 scale-125" />
-            <h1 className="text-6xl font-cursive text-[#ff4d6d] mb-4">She/He Said YES!</h1>
-            <p className="text-2xl text-gray-600 font-cursive mb-8">This is the start of our forever story...</p>
+            <h1 className="text-6xl font-cursive text-[#ff4d6d] mb-4">
+              {isApology ? 'Forgiven! ❤️' : 'She/He Said YES!'}
+            </h1>
+            <p className="text-2xl text-gray-600 font-cursive mb-8">
+              {isApology ? "Thank you for giving me another chance." : "This is the start of our forever story..."}
+            </p>
             <div className="flex justify-center gap-2 mb-8">
               {[...Array(5)].map((_, i) => (
                 <span key={i} className="text-3xl animate-pulse">❤️</span>
@@ -244,7 +254,7 @@ const App: React.FC = () => {
             </div>
             <button 
               onClick={() => {
-                setData(prev => ({ ...prev, receiverName: '', specialMemory: '' }));
+                setData(prev => ({ ...prev, receiverName: '', specialMemory: '', vibe: 'Romantic' }));
                 setStep('welcome');
               }}
               className="text-[#ff4d6d] underline font-bold"

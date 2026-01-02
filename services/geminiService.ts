@@ -10,13 +10,24 @@ export const generateLoveContent = async (
 ): Promise<{ letter: string; poem: string }> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   
-  const prompt = `Write a romantic love proposal. 
-  Sender: ${sender}
-  Receiver: ${receiver}
-  A special memory: ${memory}
-  Vibe: ${vibe}
+  const isApology = vibe === 'Sincere Apology';
   
-  Format the response as JSON with two fields: "letter" (a heartfelt 2-paragraph letter) and "poem" (a sweet 4-line poem).`;
+  const prompt = isApology 
+    ? `Write a sincere and heartfelt apology letter. 
+      Sender: ${sender}
+      Receiver: ${receiver}
+      Context/Memory: ${memory}
+      Vibe: ${vibe}
+      
+      The tone should be humble, regretful, and loving. 
+      Format the response as JSON with two fields: "letter" (a sincere 2-paragraph apology) and "poem" (a sweet 4-line poem about reconciliation).`
+    : `Write a romantic love proposal. 
+      Sender: ${sender}
+      Receiver: ${receiver}
+      A special memory: ${memory}
+      Vibe: ${vibe}
+      
+      Format the response as JSON with two fields: "letter" (a heartfelt 2-paragraph letter) and "poem" (a sweet 4-line poem).`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -36,8 +47,8 @@ export const generateLoveContent = async (
 
   const data = JSON.parse(response.text || '{}');
   return {
-    letter: data.letter || "My dearest, you mean the world to me.",
-    poem: data.poem || "Roses are red, violets are blue, my heart is forever with you."
+    letter: data.letter || (isApology ? "I'm so sorry for everything. You mean the world to me." : "My dearest, you mean the world to me."),
+    poem: data.poem || (isApology ? "I made a mistake, I know it's true, My only wish is to be back with you." : "Roses are red, violets are blue, my heart is forever with you.")
   };
 };
 
@@ -52,10 +63,8 @@ export const generateRomanticImage = async (
   if (!hasKey) {
     // @ts-ignore
     await window.aistudio?.openSelectKey();
-    // Proceed immediately to handle potential race condition as per guidelines
   }
 
-  // Create a new instance right before the call to ensure the latest selected key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   
   try {
@@ -80,21 +89,16 @@ export const generateRomanticImage = async (
       }
     }
   } catch (error: any) {
-    // Convert error to string to catch nested properties in the JSON response
     const errorString = JSON.stringify(error);
     const errorMsg = error.message || "";
-    
-    // Check for various permission or project-related errors
     if (
       errorString.includes("PERMISSION_DENIED") || 
       errorString.includes("403") ||
       errorMsg.includes("permission") ||
       errorMsg.includes("not found")
     ) {
-      console.warn("API Key issue or Permission Denied. Triggering key selection dialog.");
       // @ts-ignore
       await window.aistudio?.openSelectKey();
-      // Re-throw or return undefined so the UI can handle the retry
     }
     console.error("Image generation failed:", error);
   }
