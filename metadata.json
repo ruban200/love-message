@@ -1,0 +1,8 @@
+{
+  "name": "Teddy Love Proposal Pro",
+  "description": "An advanced, interactive love proposal web application featuring a cute teddy bear theme, AI-powered love letter generation, and high-quality AI image creation. Developed by Ruban.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
